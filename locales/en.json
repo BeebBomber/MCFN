@@ -1,1 +1,10 @@
-
+{
+  "welcome": "MCFN: NixOS Configurator (2026)",
+  "select_mode": "Select mode ([1] Wizard / [2] Pro): ",
+  "hostname_prompt": "Enter hostname: ",
+  "deploy_prompt": "Enter remote host (user@ip): ",
+  "git_token_inst": "GitHub Instruction: Settings -> Developer settings -> Tokens (classic)",
+  "preset_msg": "Select community preset (Gaming/Dev/Minimal): ",
+  "validation_start": "Starting native NixOS validation...",
+  "error_syntax": "Critical syntax error in file: "
+}

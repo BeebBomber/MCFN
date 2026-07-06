@@ -1,1 +1,10 @@
-
+{
+  "welcome": "MCFN: Конфигуратор NixOS (2026)",
+  "select_mode": "Выберите режим ([1] Мастер / [2] Профи): ",
+  "hostname_prompt": "Введите имя хоста: ",
+  "deploy_prompt": "Введите адрес удаленного хоста (user@ip): ",
+  "git_token_inst": "Инструкция GitHub: Settings -> Developer settings -> Tokens (classic)",
+  "preset_msg": "Выберите пресет (Gaming/Dev/Minimal): ",
+  "validation_start": "Запуск встроенной проверки NixOS...",
+  "error_syntax": "Критическая ошибка синтаксиса в файле: "
+}
