@@ -3,8 +3,10 @@
   "select_mode": "Select mode ([1] Wizard / [2] Pro): ",
   "hostname_prompt": "Enter hostname: ",
   "deploy_prompt": "Enter remote host (user@ip): ",
-  "git_token_inst": "GitHub Instruction: Settings -> Developer settings -> Tokens (classic)",
+  "git_token_inst": "GitHub Manual: Settings -> Developer settings -> Tokens (classic)",
   "preset_msg": "Select community preset (Gaming/Dev/Minimal): ",
   "validation_start": "Starting native NixOS validation...",
-  "error_syntax": "Critical syntax error in file: "
+  "error_syntax": "Syntax error in file: ",
+  "git_repo_prompt": "Enter GitHub Repo (username/repo): ",
+  "git_token_prompt": "Enter your Personal Access Token: "
 }

@@ -6,5 +6,7 @@
   "git_token_inst": "Инструкция GitHub: Settings -> Developer settings -> Tokens (classic)",
   "preset_msg": "Выберите пресет (Gaming/Dev/Minimal): ",
   "validation_start": "Запуск встроенной проверки NixOS...",
-  "error_syntax": "Критическая ошибка синтаксиса в файле: "
+  "error_syntax": "Ошибка синтаксиса в файле: ",
+  "git_repo_prompt": "Введите GitHub Repo (username/repo): ",
+  "git_token_prompt": "Введите ваш Personal Access Token: "
 }
