@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mcfn/internal/git"
 	"mcfn/internal/i18n"
+	"mcfn/internal/generator"
 	"mcfn/internal/validator"
 	"os"
 	"strings"
@@ -17,50 +18,54 @@ func main() {
 	fmt.Println(i18n.T.Welcome)
 	fmt.Println("-------------------------------------------")
 
-	// Ввод режима
+	// 1. Выбор режима (пока для красоты, но переменная работает)
 	fmt.Print(i18n.T.SelectMode)
-	modeInput, _ := reader.ReadString('\n')
-	mode := strings.TrimSpace(modeInput)
+	mode, _ := reader.ReadString('\n')
+	mode = strings.TrimSpace(mode)
 
-	// ИСПОЛЬЗУЕМ переменную mode, чтобы компилятор не ругался
-	switch mode {
-	case "1":
-		fmt.Println("Режим: Мастер (Wizard)")
-	case "2":
-		fmt.Println("Режим: Профи (Pro)")
-	default:
-		fmt.Println("Выбран режим по умолчанию")
-	}
-
+	// 2. Сбор данных
 	fmt.Print(i18n.T.HostnamePrompt)
-	hostnameInput, _ := reader.ReadString('\n')
-	hostname := strings.TrimSpace(hostnameInput)
+	hostname, _ := reader.ReadString('\n')
+	hostname = strings.TrimSpace(hostname)
 
-	// Пример использования hostname, чтобы тоже не было ошибки
-	fmt.Printf("Конфигурируем хост: %s\n", hostname)
+	fmt.Print("Введите имя пользователя: ")
+	username, _ := reader.ReadString('\n')
+	username = strings.TrimSpace(username)
 
+	// 3. РЕАЛЬНАЯ ГЕНЕРАЦИЯ ФАЙЛОВ
+	fmt.Println("⚙️ Генерируем конфигурационные файлы...")
+	err := generator.CreateConfigs(hostname, username)
+	if err != nil {
+		fmt.Printf("❌ Ошибка генерации: %v\n", err)
+		return
+	}
+	fmt.Println("✅ Файлы flake.nix и configuration.nix созданы.")
+
+	// 4. ВАЛИДАЦИЯ (Проверка того, что мы только что создали)
 	fmt.Println(i18n.T.ValidationStart)
-	// Важно: путь должен быть правильным, для теста проверим сам main.go
 	if err := validator.ValidateNixSyntax("flake.nix"); err != nil {
 		fmt.Printf("%s %v\n", i18n.T.ErrorSyntax, err)
+	} else {
+		fmt.Println("✅ Синтаксис Nix в порядке.")
 	}
 
-	fmt.Print("GitHub Sync? (y/n): ")
-	syncInput, _ := reader.ReadString('\n')
-	sync := strings.TrimSpace(syncInput)
+	// 5. GITHUB SYNC
+	fmt.Print("Синхронизировать с GitHub? (y/n): ")
+	syncChoice, _ := reader.ReadString('\n')
+	if strings.TrimSpace(syncChoice) == "y" {
+		fmt.Print("Введите репозиторий (username/repo): ")
+		repo, _ := reader.ReadString('\n')
+		fmt.Print("Введите GitHub Token: ")
+		token, _ := reader.ReadString('\n')
 
-	if sync == "y" {
-		fmt.Println(i18n.T.GitTokenInst)
-		fmt.Print(i18n.T.GitRepoPrompt)
-		repoInput, _ := reader.ReadString('\n')
-		repo := strings.TrimSpace(repoInput)
-
-		fmt.Print(i18n.T.GitTokenPrompt)
-		tokenInput, _ := reader.ReadString('\n')
-		token := strings.TrimSpace(tokenInput)
-		
-		git.Sync(repo, token)
+		fmt.Println("🚀 Начинаем синхронизацию...")
+		err := git.Sync(strings.TrimSpace(repo), strings.TrimSpace(token))
+		if err != nil {
+			fmt.Printf("❌ Ошибка Git: %v\n", err)
+		} else {
+			fmt.Println("🥳 Конфигурация успешно отправлена на GitHub!")
+		}
 	}
 
-	fmt.Println("Завершено.")
+	fmt.Println("\nГотово. Теперь вы можете запустить 'sudo nixos-rebuild switch --flake .'")
 }
