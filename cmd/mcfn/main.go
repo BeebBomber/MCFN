@@ -1,71 +1,73 @@
 package main
 
 import (
-	"bufio"
+	"flag"
 	"fmt"
-	"mcfn/internal/git"
-	"mcfn/internal/i18n"
-	"mcfn/internal/generator"
-	"mcfn/internal/validator"
 	"os"
-	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"mcfn/internal/generator"
+	"mcfn/internal/tui"
 )
 
+const helpText = `MCFN — NixOS Config Generator
+
+Использование:
+  mcfn [флаги]
+
+Флаги:
+  -h, --help              Показать эту справку
+      --hostname <name>   Предзаполнить hostname
+      --username <name>   Предзаполнить имя пользователя
+      --output <dir>      Директория для сохранения конфига (default: ./nixos-config)
+      --no-github         Пропустить шаг загрузки в GitHub
+      --config <file>     Загрузить настройки из mcfn-config.json
+
+Примеры:
+  mcfn
+  mcfn --hostname mypc --username alice
+  mcfn --output /etc/nixos --no-github
+  mcfn --config ./nixos-config/mcfn-config.json
+  mcfn --config old-config.json --output ./new-config
+`
+
 func main() {
-	i18n.LoadLocale()
-	reader := bufio.NewReader(os.Stdin)
+	var opts tui.Options
+	var configFile string
+	help := false
 
-	fmt.Println(i18n.T.Welcome)
-	fmt.Println("-------------------------------------------")
+	flag.BoolVar(&help, "help", false, "")
+	flag.BoolVar(&help, "h", false, "")
+	flag.StringVar(&opts.Hostname, "hostname", "", "")
+	flag.StringVar(&opts.Username, "username", "", "")
+	flag.StringVar(&opts.Output, "output", "", "")
+	flag.BoolVar(&opts.NoGitHub, "no-github", false, "")
+	flag.StringVar(&configFile, "config", "", "")
+	flag.Usage = func() { fmt.Print(helpText) }
+	flag.Parse()
 
-	// 1. Выбор режима (пока для красоты, но переменная работает)
-	fmt.Print(i18n.T.SelectMode)
-	mode, _ := reader.ReadString('\n')
-	mode = strings.TrimSpace(mode)
-
-	// 2. Сбор данных
-	fmt.Print(i18n.T.HostnamePrompt)
-	hostname, _ := reader.ReadString('\n')
-	hostname = strings.TrimSpace(hostname)
-
-	fmt.Print("Введите имя пользователя: ")
-	username, _ := reader.ReadString('\n')
-	username = strings.TrimSpace(username)
-
-	// 3. РЕАЛЬНАЯ ГЕНЕРАЦИЯ ФАЙЛОВ
-	fmt.Println("⚙️ Генерируем конфигурационные файлы...")
-	err := generator.CreateConfigs(hostname, username)
-	if err != nil {
-		fmt.Printf("❌ Ошибка генерации: %v\n", err)
-		return
-	}
-	fmt.Println("✅ Файлы flake.nix и configuration.nix созданы.")
-
-	// 4. ВАЛИДАЦИЯ (Проверка того, что мы только что создали)
-	fmt.Println(i18n.T.ValidationStart)
-	if err := validator.ValidateNixSyntax("flake.nix"); err != nil {
-		fmt.Printf("%s %v\n", i18n.T.ErrorSyntax, err)
-	} else {
-		fmt.Println("✅ Синтаксис Nix в порядке.")
+	if help {
+		fmt.Print(helpText)
+		os.Exit(0)
 	}
 
-	// 5. GITHUB SYNC
-	fmt.Print("Синхронизировать с GitHub? (y/n): ")
-	syncChoice, _ := reader.ReadString('\n')
-	if strings.TrimSpace(syncChoice) == "y" {
-		fmt.Print("Введите репозиторий (username/repo): ")
-		repo, _ := reader.ReadString('\n')
-		fmt.Print("Введите GitHub Token: ")
-		token, _ := reader.ReadString('\n')
-
-		fmt.Println("🚀 Начинаем синхронизацию...")
-		err := git.Sync(strings.TrimSpace(repo), strings.TrimSpace(token))
+	if configFile != "" {
+		s, err := generator.LoadSettings(configFile)
 		if err != nil {
-			fmt.Printf("❌ Ошибка Git: %v\n", err)
-		} else {
-			fmt.Println("🥳 Конфигурация успешно отправлена на GitHub!")
+			fmt.Fprintf(os.Stderr, "Ошибка загрузки конфига: %v\n", err)
+			os.Exit(1)
+		}
+		opts.Settings = &s
+		// CLI --output overrides saved outputDir
+		if opts.Output != "" {
+			s.OutputDir = opts.Output
+			opts.Settings = &s
 		}
 	}
 
-	fmt.Println("\nГотово. Теперь вы можете запустить 'sudo nixos-rebuild switch --flake .'")
+	p := tea.NewProgram(tui.NewModel(opts), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Ошибка запуска: %v\n", err)
+		os.Exit(1)
+	}
 }

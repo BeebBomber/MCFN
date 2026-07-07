@@ -1,60 +1,108 @@
-# MCFN — My Configuration for NixOS
-From empty console to complete Flakes ecosystem in minutes.
+# MCFN — NixOS Config Generator
 
-MCFN (My Configuration for NixOS) — это полнофункциональный CLI-инструмент для автоматизации настройки и развертывания NixOS. Проект объединяет возможности Flakes, Home Manager, Stylix и Sops-nix, предоставляя интерфейс как для начинающих пользователей, так и для профи.
+TUI-инструмент для генерации `configuration.nix` и `flake.nix` под вашу NixOS-систему. Запускается как пошаговый визард, не требует ручного редактирования Nix-файлов.
 
----
-## Способы запуска
-### Прямой запуск (рекомендуется)
-Запуск актуальной версии напрямую из репозитория без предварительной установки:
+## Возможности
+
+- Пошаговый TUI-визард (bubbletea)
+- Генерация `configuration.nix` и опционально `flake.nix`
+- **Рабочие столы:** GNOME, KDE Plasma 6, XFCE, Cinnamon, MATE, LXQt, i3, Sway, Hyprland, Niri
+- **Дисплей-менеджеры:** GDM, SDDM, LightDM, greetd, ly — выбираются независимо от DE
+- **Файловые системы:** ext4, btrfs (autoScrub), ZFS (autoScrub + случайный hostId)
+- **Home Manager** — как nixosModule в flake
+- **sops-nix** — шаблон secrets + .sops.yaml
+- Несколько пользователей (основной + дополнительные)
+- Предпросмотр файлов перед генерацией (`Tab` — переключение, `↑/↓` — прокрутка)
+- Загрузка конфига в приватный GitHub-репозиторий (токен, создаёт репо автоматически)
+- Сохранение настроек в `mcfn-config.json` для повторного использования
+
+## Сборка
+
+Требуется Go 1.22+.
+
 ```bash
-nix run github:BeebBomber/mcfn
+git clone https://github.com/BeebBomber/MCFN.git
+cd MCFN
+go build -o mcfn ./cmd/mcfn/
 ```
-### Экспериментальный метод (Bootstrap)
-Для быстрой развертки структуры проекта одной командой (используется ветка experimental):
+
+Или через Nix:
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/BeebBomber/mcfn/experimental/bootstrap.sh | bash
-```
----
-## Ключевые возможности
-### Глобальные функции
-- Multi-language: Автоматическое определение RU/EN языка интерфейса и генерируемых файлов конфигурации.
-- Wizard and Pro Modes: Выбор между автоматизированным мастером и полным ручным контролем над каждым параметром.
-- Validation: Обязательная проверка кода через nix-instantiate и nix flake check перед применением изменений.
-- Safe-Apply: Автоматическое резервное копирование текущей конфигурации в /etc/nixos.bak.
-### Технический стек
-- Remote Deploy: Установка и обновление NixOS на удаленных хостах по SSH.   
-- Community Presets: Готовые наборы настроек для различных сценариев (Gaming, Development, Minimal).
-- ISO Builder: Генерация собственного установочного образа на основе текущего конфига.
-- VM Test: Сборка и запуск конфигурации в виртуальной машине QEMU для тестирования.
-- Secret Management: Интеграция sops-nix для управления зашифрованными паролями.
-- Theming: Единая система темизации через Stylix.
----
-## Архитектура создаваемой конфигурации
-Инструмент генерирует модульную структуру в директории /etc/nixos/:
-```
-/etc/nixos/
-├── flake.nix             # Управление зависимостями и входами
-├── configuration.nix     # Глобальные системные настройки
-├── home.nix              # Пользовательские настройки (Home Manager)
-├── hardware-config.nix   # Конфигурация оборудования (автоопределение)
-└── modules/              # Дополнительные модули и секреты
-```
----
-## Инструкция по работе с GitHub Cloud
-Для синхронизации конфигурации MCFN использует Personal Access Tokens (PAT).
-1. Перейдите в Settings -> Developer settings -> Tokens (classic).
-2. Создайте новый токен с разрешением (scope) "repo".
-3. Скопируйте токен и введите его при запросе в MCFN.
----
-## Разработка
-
-Для подготовки среды разработки используйте Nix:
-
-```
-git clone https://github.com/BeebBomber/mcfn.git
-cd mcfn
-nix develop
+nix build
 ```
 
-Конфигуратор MCFN, 2026.
+## Использование
+
+```bash
+./mcfn                                          # интерактивный визард
+./mcfn --hostname mypc --username alice         # предзаполнить поля
+./mcfn --output /etc/nixos --no-github          # сохранить в /etc/nixos, без GitHub
+./mcfn --config ./nixos-config/mcfn-config.json # повторить прошлую конфигурацию
+```
+
+### Флаги
+
+| Флаг | Описание |
+|------|----------|
+| `-h`, `--help` | Справка |
+| `--hostname <name>` | Предзаполнить hostname |
+| `--username <name>` | Предзаполнить имя пользователя |
+| `--output <dir>` | Директория для сохранения (default: `./nixos-config`) |
+| `--no-github` | Пропустить шаг загрузки в GitHub |
+| `--config <file>` | Загрузить настройки из `mcfn-config.json` |
+
+## Шаги визарда
+
+1. Hostname
+2. Основной пользователь
+3. Дополнительные пользователи
+4. flake.nix (да/нет)
+5. Загрузчик (systemd-boot, GRUB EFI, GRUB Legacy)
+6. Архитектура (x86\_64, aarch64)
+7. Версия NixOS (25.05, 26.05, unstable)
+8. Рабочий стол
+9. Дисплей-менеджер
+10. Файловая система
+11. NetworkManager
+12. SSH
+13. Home Manager *(только при flake)*
+14. sops-nix *(только при flake)*
+15. Дополнительные пакеты
+16. Директория сохранения
+17. Подтверждение + предпросмотр файлов
+18. Генерация
+19. Загрузка в GitHub *(опционально)*
+
+## Применение конфига
+
+```bash
+# С flake.nix
+sudo nixos-rebuild switch --flake ./nixos-config#hostname
+
+# Без flake.nix
+sudo nixos-rebuild switch -I nixos-config=./nixos-config/configuration.nix
+```
+
+## GitHub
+
+Для загрузки конфига нужен Personal Access Token с правами `repo`:
+
+1. GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Создать токен с разрешением **repo**
+3. Вставить при запросе в визарде
+
+MCFN создаст **приватный** репозиторий и запушит туда конфиг.
+
+## Генерируемые файлы
+
+```
+nixos-config/
+├── configuration.nix     # основной конфиг системы
+├── flake.nix             # если выбрано
+├── home.nix              # если выбран Home Manager
+├── secrets/
+│   └── secrets.yaml      # если выбран sops-nix (заглушка под шифрование)
+├── .sops.yaml            # если выбран sops-nix
+└── mcfn-config.json      # настройки для --config
+```
